@@ -40,3 +40,4 @@ build/
 
 ### SpringBoot ###
 application.properties
+.idea/workspace.xml
