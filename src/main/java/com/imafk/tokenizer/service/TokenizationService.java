@@ -1,23 +1,31 @@
 package com.imafk.tokenizer.service;
 
+import com.imafk.jedis.TokenStorage;
 import com.imafk.tokenizer.model.*;
+import com.imafk.tokenizer.util.EncryptionUtil;
 import com.imafk.tokenizer.util.TokenGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@RestController
 @Service
 public class TokenizationService {
+    private final TokenValidator tokenValidator;
+    private final EncryptionUtil encryptionUtil;
+    private final TokenStorage store;
+    private  final TokenGenerator tokenGenerator;
 
-    private static final Logger logger = LoggerFactory.getLogger(TokenizationService.class);
+    @Autowired
+    public TokenizationService(TokenValidator tokenValidator, EncryptionUtil encryptionUtil, TokenStorage store, TokenGenerator tokenGenerator){
+        this.tokenValidator = tokenValidator;
+        this.encryptionUtil = encryptionUtil;
+        this.store = store;
+        this.tokenGenerator = tokenGenerator;
+    }
 
     public TokenResponse tokenize(Map<String, Object> reqBody) {
-        logger.info("Received TokenRequest: {}", reqBody);
         LinkedHashMap data = (LinkedHashMap) reqBody.get("data");
         TokenRequest tokenRequest = new TokenRequest((String) reqBody.get("id"), new Data(data));
 
@@ -25,24 +33,18 @@ public class TokenizationService {
             throw new IllegalArgumentException("Invalid request or missing data");
         }
         // token generation step
-        Data tokenizedResponseData = new TokenGenerator(new Data(data)).dataTokenizer();
+        tokenGenerator.setData(new Data(data));
+        Data tokenizedResponseData = tokenGenerator.tokenizeAndStoreData();
         return new TokenResponse(tokenRequest.getId(), tokenizedResponseData);
     }
 
+
     public DetokenResponse detokenize(Map<String, Object> reqBody) {
         LinkedHashMap data = (LinkedHashMap) reqBody.get("data");
-        // fill store
-        LinkedHashMap<String, String> store = new LinkedHashMap<>();
-
-        // TODO: remove this store later on
-        store.put("field1", "BQGC5s");
-        store.put("field2", "dbnmfF");
-        store.put("fieldn", "dSxzJU");
-
         if (data == null) {
             throw new IllegalArgumentException("Invalid request or missing data");
         }
-        TokenValidator tokenValidator = new TokenValidator(store, data);
+        tokenValidator.setReqData(data);
         Fields fields = tokenValidator.validateTokens();
 
         return new DetokenResponse((String) reqBody.get("id"), fields);
