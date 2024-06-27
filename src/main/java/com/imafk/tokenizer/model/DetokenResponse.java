@@ -2,6 +2,7 @@ package com.imafk.tokenizer.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 public class DetokenResponse {
     private final String id;
@@ -20,6 +21,7 @@ public class DetokenResponse {
     }
 
     @JsonProperty("fields")
+    @JsonUnwrapped
     public Fields getFields() {
         return fields;
     }
